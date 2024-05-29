@@ -12,6 +12,8 @@
 from ccdc import io, particle
 import itertools
 import numpy as np
+import os
+import argparse
 
 
 def calculate_length(origin, target):
@@ -48,7 +50,7 @@ class SurfaceChemistryAnalyser:
     def _calculate_chemistry_lookup(self):
         """Calculates a lookup table for the different chemistries with the triangle index"""
         if self.triangle_lookup is None:
-            raise LookupError(f"Triangle look up not calculated. Wrong order of operations.")
+            raise LookupError("Triangle look up not calculated. Wrong order of operations.")
         self._unique_triangle_lookup = self.unique_triangle_chemistries(self.triangle_lookup)
         self.chemistry_triangles = self._invert_list_to_dictionary(self._unique_triangle_lookup)
 
@@ -173,12 +175,8 @@ class SurfaceChemistryAnalyser:
         return groups
 
 
-def analyse(input_crystal, hkl, offset):
-    molecule = input_crystal.molecule
-    molecule.assign_bond_types(which="unknown")
-    input_crystal.molecule = molecule
-
-    surface = particle.Surface(input_crystal, hkl, offset=offset)
+def analyse(analysis_crystal, hkl, offset):
+    surface = particle.Surface(analysis_crystal, hkl, offset=offset)
 
     surface_chemistry = list(set([atom.sybyl_type for atom in surface.surface_atoms]))
 
@@ -203,9 +201,37 @@ def analyse(input_crystal, hkl, offset):
 
 
 if __name__ == '__main__':
-    # simple demonstration of how to use this script
-    csd = io.CrystalReader('CSD')
-    test_crystal = csd.crystal("HXACAN")
-    test_crystal.assign_bonds()
-    output = analyse(input_crystal=test_crystal, hkl=(0, 0, 2), offset=0.00)
+    """
+    Set up the necessary arguments to run the script.
+    Running without any arguments will run the [0, 0, 2] surface of paracetamol (HXACAN) at 0.00 offset.
+    """
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                                     description=__doc__)
+    parser.add_argument("input_structure", nargs="?", type=str,
+                        help="Provide CSD refcode or path to file")
+    parser.add_argument("surface", nargs=3, type=int,
+                        help="Provide surface of interest in format h k l")
+    parser.add_argument("-o", "--offset", type=float,
+                        help="Provide offset from desired plane",
+                        default=0.00)
+    args = parser.parse_args()
+
+    refcode = False
+    if not os.path.isfile(args.input_structure):
+        if len(str(args.input_structure).split('.')) == 1:
+            refcode = True
+        else:
+            parser.error('%s - file not found.' % args.input_structure)
+
+    if refcode:
+        try:
+            input_crystal = io.CrystalReader("CSD").crystal(args.input_structure)
+        except RuntimeError:
+            print('Error! %s is not in the database!' % args.input_structure)
+            quit()
+    else:
+        input_crystal = io.CrystalReader(args.input_structure)[0]
+        input_crystal.assign_bonds()
+
+    output = analyse(analysis_crystal=input_crystal, hkl=tuple(args.surface), offset=args.offset)
     print(output)
