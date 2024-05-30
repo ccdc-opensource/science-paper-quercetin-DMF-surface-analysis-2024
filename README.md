@@ -1,6 +1,5 @@
 # Quercetin/DMF Surface Analysis
 
-
 Supporting code for <placeholder for DOI>.
 
 ---
@@ -43,13 +42,11 @@ C.ar : 42.315
 {'O.2': 6.36, 'O.3': 18.958, 'H': 54.793, 'N.am': 1.034, 'C.3': 12.862, 'C.ar': 42.315}
 ```
 
-# Dependencies:
-
+# Dependencies
 
 - [CSD-Python-API](https://www.ccdc.cam.ac.uk/solutions/csd-core/components/csd-python-api/)
 
-# License Requirements:
-
+# License Requirements
 
 - CSD-Particle
 
